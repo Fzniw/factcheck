@@ -20,24 +20,24 @@ headers = {
 
 def get_html(page_num):
     for i in tqdm.tqdm(range(page_num)):
-        url = f'https://navi.fij.info/factchecks/page/{i+1}/'
+        url = f"https://navi.fij.info/factchecks/page/{i+1}/"
         r = requests.get(url, headers=headers)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        contents = soup.find('main', class_='site-main').find_all('div', class_='cont')
+        soup = BeautifulSoup(r.text, "html.parser")
+        contents = soup.find("main", class_="site-main").find_all("div", class_="cont")
         write_to_csv(contents)
 
         time.sleep(2)
 
 
 def write_to_csv(contents):
-    with open('test.csv', 'a', encoding='utf-8') as f:
+    with open("fact_check.csv", "a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         for content in contents:
-            date = content.find('p', class_='time').text.replace('.', '/')
-            a = content.find('a')
+            date = content.find("p", class_="time").text.replace(".", "/")
+            a = content.find("a")
             title = a.text
             try:
-                tag = content.find('p', class_='icon').text
+                tag = content.find("p", class_="icon").text
             except:
                 pass
             link = a.get("href")
@@ -46,5 +46,27 @@ def write_to_csv(contents):
             writer.writerow(row)
 
 
-if __name__ == '__main__':
-    get_html(14)
+def get_article_link():
+    with open("fact_check.csv", "r") as f:
+        reader = csv.reader(f)
+        for line in tqdm.tqdm(reader):
+            url = line[3]
+            if "infact" in url:
+                print(f"get content : {url}")
+
+                r = requests.get(url, headers=headers)
+                soup = BeautifulSoup(r.text, "html.parser")
+                link = soup.find("div", class_="links_btn").find("a").get("href")
+
+                r = requests.get(link, headers=headers)
+                soup = BeautifulSoup(r.text, "html.parser")
+                content = soup.find("div", class_="entry-content")
+                content.find("div", class_="box").extract()
+
+                with open("infact_articles.txt", mode="a") as f:
+                    f.write(content.text)
+
+            time.sleep(2)
+
+if __name__ == "__main__":
+    get_article_link()
